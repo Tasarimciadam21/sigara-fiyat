@@ -60,6 +60,78 @@ def scrape_veryansintv() -> dict[str, float]:
 
 
 # ═══════════════════════════════════════════
+# KAYNAK 2: antalyahurses.com (en güncel)
+# ═══════════════════════════════════════════
+
+def scrape_antalyahurses() -> dict[str, float]:
+    url = "https://www.antalyahurses.com/guncel-zamli-sigara-fiyatlari/530457"
+    prices: dict[str, float] = {}
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        r.raise_for_status()
+        r.encoding = "utf-8"
+        text = r.text.replace("\xa0", " ")
+
+        # Tablo formatı: <td>Marka</td><td>XXX TL</td>
+        table_pat = re.compile(
+            r"<td[^>]*>\s*([^<]+?)\s*</td>\s*<td[^>]*>\s*(\d+)\s*TL\s*</td>",
+            re.IGNORECASE,
+        )
+        for m in table_pat.finditer(text):
+            brand = m.group(1).strip()
+            try:
+                price = float(m.group(2))
+            except ValueError:
+                continue
+            if brand and 40 < price < 500:
+                prices.update(expand_brand(brand, price))
+
+        # Liste formatı: "Marka — XXX TL" veya "Marka: XXX TL"
+        list_pat = re.compile(
+            r"([A-Za-zÇçĞğİıÖöŞşÜü&\s\d.\-()/']+?)\s*[—–:]\s*(\d+)\s*TL",
+        )
+        for m in list_pat.finditer(text):
+            brand = m.group(1).strip()
+            try:
+                price = float(m.group(2))
+            except ValueError:
+                continue
+            if brand and 40 < price < 500 and len(brand) > 2:
+                prices.update(expand_brand(brand, price))
+
+        # "Marka XXX ₺" formatı
+        lira_pat = re.compile(
+            r"([A-Za-zÇçĞğİıÖöŞşÜü&\s\d.\-()/']+?)\s+(\d+)\s*₺",
+        )
+        for m in lira_pat.finditer(text):
+            brand = m.group(1).strip()
+            try:
+                price = float(m.group(2))
+            except ValueError:
+                continue
+            if brand and 40 < price < 500 and len(brand) > 2:
+                prices.update(expand_brand(brand, price))
+
+        # "MARKA XXX TL" formatı (büyük harfle başlayan)
+        tl_pat = re.compile(
+            r"([A-Z][A-Za-zÇçĞğİıÖöŞşÜü &/().'0-9\-]+?)\s+(\d+)\s*TL",
+        )
+        for m in tl_pat.finditer(text):
+            brand = m.group(1).strip().rstrip(" -–—")
+            try:
+                price = float(m.group(2))
+            except ValueError:
+                continue
+            if brand and 40 < price < 500 and len(brand) > 2:
+                prices.update(expand_brand(brand, price))
+
+        print(f"  [antalyahurses] {len(prices)} marka")
+    except Exception as e:
+        print(f"  [antalyahurses] HATA: {e}")
+    return prices
+
+
+# ═══════════════════════════════════════════
 # KAYNAK 2: Google News'den zam haberi tara
 # ═══════════════════════════════════════════
 
@@ -218,7 +290,7 @@ def smart_merge(
     """
     merged: dict[str, float] = {}
 
-    # Tüm kaynaklardan topla
+    # Kaynakları sırayla uygula (son kaynak en öncelikli)
     for src in sources:
         for brand, price in src.items():
             if brand not in merged or price > merged[brand]:
@@ -227,12 +299,41 @@ def smart_merge(
     # Önceki fiyatlarla karşılaştır
     for brand, prev_price in previous.items():
         if brand not in merged:
-            # Kaynaklarda yok → öncekini koru
             merged[brand] = prev_price
         elif merged[brand] < prev_price:
-            # Kaynak daha düşük fiyat veriyor → öncekini koru
-            # (site henüz güncellenmemiş olabilir)
             merged[brand] = prev_price
+
+    # Benzer isimleri eşleştir: "Kent Blue / White" → "Kent Blue", "Kent White"
+    to_add: dict[str, float] = {}
+    for brand, price in list(merged.items()):
+        if " / " in brand:
+            parts = brand.split(" / ")
+            # İlk parça tam isim, sonrakiler son kelime varyantları
+            base_parts = parts[0].rsplit(" ", 1)
+            if len(base_parts) == 2:
+                prefix = base_parts[0]
+                to_add[parts[0]] = price  # "Kent Blue"
+                for p in parts[1:]:
+                    full = f"{prefix} {p.strip()}"
+                    if full not in merged or price > merged.get(full, 0):
+                        to_add[full] = price  # "Kent White"
+            else:
+                to_add[brand] = price
+
+        if " & " in brand:
+            parts = brand.split(" & ")
+            base_parts = parts[0].rsplit(" ", 1)
+            if len(base_parts) == 2:
+                prefix = base_parts[0]
+                to_add[parts[0]] = price
+                for p in parts[1:]:
+                    full = f"{prefix} {p.strip()}"
+                    if full not in merged or price > merged.get(full, 0):
+                        to_add[full] = price
+
+    for k, v in to_add.items():
+        if k not in merged or v > merged[k]:
+            merged[k] = v
 
     return merged
 
@@ -272,12 +373,15 @@ def main():
     # Kaynak 1: veryansintv
     src_veryans = scrape_veryansintv()
 
-    # Kaynak 2: Zam haberleri (Google News)
+    # Kaynak 2: antalyahurses (en güncel)
+    src_antalya = scrape_antalyahurses()
+
+    # Kaynak 3: Zam haberleri (Google News)
     src_haberler = scrape_zam_haberleri()
 
     # Akıllı birleştirme
     print(f"\n{'=' * 50}")
-    merged = smart_merge(previous, src_veryans, src_haberler)
+    merged = smart_merge(previous, src_veryans, src_antalya, src_haberler)
 
     # Geçersizleri temizle
     merged = {k: v for k, v in merged.items() if v > 0 and len(k) > 1}
@@ -305,6 +409,7 @@ def main():
             "updated": datetime.now(timezone.utc).isoformat(),
             "sources": {
                 "veryansintv": len(src_veryans),
+                "antalyahurses": len(src_antalya),
                 "zam_haberleri": len(src_haberler),
             },
             "total": len(merged),
