@@ -104,52 +104,59 @@ def expand_brand(raw: str, price: float) -> dict[str, float]:
     return result
 
 
-# Yerel yedek fiyatlar (API çalışmazsa kullanılır)
+# Yerel yedek fiyatlar — web'deki gerçek fiyatlarla eşit tutulur.
+# Sadece web çalışmadığında kullanılır.
 FALLBACK_PRICES: dict[str, float] = {
-    "Marlboro Edge": 118, "Marlboro Red": 120, "Marlboro Red Long": 120,
-    "Marlboro Touch": 120, "Marlboro Touch Blue": 120,
-    "Marlboro Touch Grey": 120, "Marlboro Touch White": 120,
-    "Marlboro Roll 50": 150, "Marlboro Classic": 120,
-    "Marlboro Filter Plus": 120, "Marlboro Gold Original": 120,
-    "Marlboro Micro Touch": 120, "Marlboro XL Touch": 120,
-    "Parliament Night Blue": 120, "Parliament Aqua Blue": 125,
-    "Parliament Aqua Blue Slims": 125, "Parliament Midnight Blue": 120,
-    "Parliament Reserve": 125,
-    "Chesterfield Black": 115, "Chesterfield Blue": 115,
-    "L&M Red": 115, "L&M Blue": 115, "L&M Red Label": 115,
-    "Lark Blue": 115, "Lark Gold": 115, "Lark Silver": 115,
-    "Muratti Rosso": 117, "Muratti Blue": 117, "Muratti Silver": 117,
-    "Winston Classic": 120, "Winston Blue": 120, "Winston Deep Blue": 115,
-    "Winston Dark Blue": 115, "Winston Slender": 115, "Winston Slims": 125,
-    "Winston X sence Black": 125, "Winston X sence Gray": 125,
-    "Camel Yellow": 115, "Camel Brown": 115, "Camel Black": 112,
-    "Camel White": 112, "Camel Deep Blue": 112, "Camel Slender": 110,
-    "Camel Filters": 115, "LD": 110, "LD Slims": 110,
-    "Kent Blue": 115, "Kent Grey": 115, "Kent White": 115,
-    "Kent Dark Blue": 105, "Kent Dark Blue Long": 105,
-    "Kent D Range Grey": 105, "Kent D Range Blue": 105,
-    "Kent D Range Blue Long": 107, "Kent D Range Grey Long": 107,
-    "Kent Slims Black": 115, "Kent Slims Grey": 115,
-    "Lucky Strike Red": 105, "Lucky Strike Blue": 105,
-    "Rothmans Blue": 100, "Rothmans Red": 100,
-    "Pall Mall Red": 105, "Pall Mall Blue": 105,
-    "Dunhill Double Blue": 99, "Viceroy Red": 105, "Viceroy Blue": 105,
-    "Davidoff Classic": 110, "Davidoff Gold": 110, "Davidoff Slims": 110,
-    "Davidoff C Line Blue": 105, "Davidoff Burgundy": 110,
-    "Davidoff Ivory": 110, "Davidoff White": 110,
-    "West Navy": 98, "West Grey": 98, "West White": 98,
-    "Tekel 2000": 100, "Tekel 2001": 105,
-    "Samsun Kısa": 105, "Samsun Uzun": 105, "Samsun 216": 105,
-    "Maltepe Kısa": 105, "Maltepe Uzun": 105,
-    "Monte Carlo": 110, "Monte Carlo Slender": 110, "Bianca": 111,
-    "Polo Blue": 100, "Polo Grey": 100, "Imperial Classic Red": 64,
-    "Violet Slims": 115,
-    "Winner Slims Blue": 102, "Winner Slims Dore": 102, "Winner Slims Red": 102,
-    "HD Slims Blue": 100, "HD Red": 100, "HD Blue": 100, "HD Sky": 100,
-    "President": 100, "Vigor Cerulean": 102, "Point Blue Slims": 100,
-    "Medley": 97, "MMC": 97, "Hazar": 97, "Toros 2005": 97,
-    "Raison T-Black": 80, "Esse Brown": 92, "Esse Blue": 100,
-    "Esse Black": 100, "Esse White": 100, "Esse Reserv": 83, "Esse Xmell": 82,
+    "Marlboro Edge": 108, "Marlboro Red": 110, "Marlboro Red Long": 110,
+    "Marlboro Touch": 110, "Marlboro Touch Blue": 110,
+    "Marlboro Touch Grey": 110, "Marlboro Touch White": 110,
+    "Marlboro Touch 4": 110, "Marlboro Touch 6": 110,
+    "Marlboro Touch XL": 110, "Marlboro Roll 50": 140,
+    "Marlboro Classic": 110, "Marlboro Filter Plus": 110,
+    "Marlboro Gold Original": 110, "Marlboro Micro Touch": 110,
+    "Marlboro Micro Fine Touch": 110, "Marlboro Micro Emerald Touch": 110,
+    "Marlboro XL Touch": 110, "Marlboro XL Fine Touch": 110,
+    "Parliament Night Blue": 110, "Parliament Aqua Blue": 115,
+    "Parliament Aqua Blue Slims": 115, "Parliament Midnight Blue": 110,
+    "Parliament Reserve": 115,
+    "Chesterfield Black": 105, "Chesterfield Blue": 105,
+    "L&M Red": 105, "L&M Blue": 105, "L&M Red Label": 105,
+    "Lark Blue": 105, "Lark Gold": 105, "Lark Silver": 105,
+    "Muratti Rosso": 107, "Muratti Blue": 107, "Muratti Silver": 107,
+    "Winston Classic": 110, "Winston Blue": 110, "Winston Blue 100": 110,
+    "Winston Classic 100": 110, "Winston Deep Blue": 105,
+    "Winston Dark Blue": 105, "Winston Slender": 105, "Winston Slims": 115,
+    "Winston X sence Black": 115, "Winston X sence Gray": 115,
+    "Winston Nova Blue 100": 110, "Winston Nova Gold": 110,
+    "Camel Yellow": 105, "Camel Brown": 105, "Camel Black": 102,
+    "Camel White": 102, "Camel Deep Blue": 102, "Camel Slender": 100,
+    "Camel Compact Black": 102, "Camel Filters": 105,
+    "LD": 100, "LD Slims": 100,
+    "Kent Blue": 105, "Kent Grey": 105, "Kent White": 105,
+    "Kent Dark Blue": 95, "Kent Dark Blue Long": 95,
+    "Kent D Range Grey": 95, "Kent D Range Blue": 95,
+    "Kent D Range Blue Long": 97, "Kent D Range Grey Long": 97,
+    "Kent Slims Black": 105, "Kent Slims Grey": 105,
+    "Lucky Strike Red": 95, "Lucky Strike Blue": 95,
+    "Rothmans Blue": 90, "Rothmans Red": 90,
+    "Pall Mall Red": 95, "Pall Mall Blue": 95,
+    "Dunhill Double Blue": 89, "Viceroy Red": 95, "Viceroy Blue": 95,
+    "Davidoff Classic": 100, "Davidoff Gold": 100, "Davidoff Slims": 100,
+    "Davidoff C Line Blue": 95, "Davidoff Burgundy": 100,
+    "Davidoff Ivory": 100, "Davidoff White": 100,
+    "West Navy": 88, "West Grey": 88, "West White": 88,
+    "Tekel 2000": 90, "Tekel 2001": 95,
+    "Samsun Kısa": 95, "Samsun Uzun": 95, "Samsun 216": 95,
+    "Maltepe Kısa": 95, "Maltepe Uzun": 95,
+    "Monte Carlo": 100, "Monte Carlo Slender": 100, "Bianca": 101,
+    "Polo Blue": 90, "Polo Grey": 90, "Imperial Classic Red": 54,
+    "Violet Slims": 105,
+    "Winner Slims Blue": 92, "Winner Slims Dore": 92, "Winner Slims Red": 92,
+    "HD Slims Blue": 90, "HD Red": 90, "HD Blue": 90, "HD Sky": 90,
+    "President": 90, "Vigor Cerulean": 92, "Point Blue Slims": 90,
+    "Medley": 87, "MMC": 87, "Hazar": 87, "Toros 2005": 87,
+    "Raison T-Black": 70, "Esse Brown": 82, "Esse Blue": 90,
+    "Esse Black": 90, "Esse White": 90, "Esse Reserv": 73, "Esse Xmell": 72,
 }
 
 
@@ -159,24 +166,18 @@ def main():
     # Web'den çek
     scraped = scrape_veryansintv()
 
-    # Birleştir: web + fallback (her marka için en yüksek fiyatı al)
-    # Çünkü zam geldiğinde web siteleri geç güncellenebilir
+    # Birleştir: fallback temel, web üzerine yazar (web her zaman öncelikli)
     merged: dict[str, float] = {}
 
-    # Önce web fiyatlarını koy
+    # Önce fallback'i koy (temel)
+    merged.update(FALLBACK_PRICES)
+
+    # Web fiyatlarını üzerine yaz (web her zaman doğrudur)
     if scraped:
         merged.update(scraped)
         print(f"\n  ✓ Web'den {len(scraped)} fiyat alındı")
     else:
-        print("\n  ⚠ Web'den fiyat alınamadı")
-
-    # Fallback'ten eksik olanları ekle, varsa yüksek olanı al
-    for brand, price in FALLBACK_PRICES.items():
-        if brand not in merged:
-            merged[brand] = price
-        elif price > merged[brand]:
-            # Fallback daha yüksekse zam gelmiş, onu kullan
-            merged[brand] = price
+        print("\n  ⚠ Web'den fiyat alınamadı, yedek fiyatlar kullanılıyor")
 
     # Geçersizleri temizle
     merged = {k: v for k, v in merged.items() if v > 0 and len(k) > 1}
