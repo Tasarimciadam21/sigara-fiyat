@@ -2,9 +2,9 @@ name: Sigara Fiyat Güncelle
 
 on:
   schedule:
-    # Günde 4 kez çalış (UTC): 06:00, 12:00, 18:00, 00:00
-    # Türkiye saati: 09:00, 15:00, 21:00, 03:00
-    - cron: '0 0,6,12,18 * * *'
+    # Günde 6 kez çalış (UTC) — Türkiye saati parantez içinde
+    # Zam haberleri genelde sabah/öğlen yayınlanır
+    - cron: '0 4,7,10,13,16,21 * * *'  # TR: 07, 10, 13, 16, 19, 00
   workflow_dispatch: # Manuel tetikleme
 
 jobs:
